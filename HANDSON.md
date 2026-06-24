@@ -980,7 +980,7 @@ Figma 公式の MCP（リモート）を、3章で学んだ **プラグイン機
 2. **Get a copy（複製を取得）** をクリック → 自分の下書き（Drafts）にコピーされる（ファイル名に `(Community)` が付く）
    * URL の末尾に `/duplicate` を付けて開いても複製できる
 3. 複製したファイルでコンポーネント（例：ボタンやカード）を選択 → 右クリック **Copy link to selection** でリンクを取得
-4. Claude Code に貼り付けて依頼:
+4. 以下をClaude Code に貼り付けて依頼:
 
 ```
 このFigmaデザインを HTML + Tailwind CSS で実装して（リンク貼り付け）。
