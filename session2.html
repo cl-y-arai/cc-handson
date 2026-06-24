@@ -540,9 +540,12 @@ allowed-tools: Read, Edit, Bash
         ローカル（デスクトップ）方式は Figma デスクトップアプリ＋Dev 席（有料プラン）が必要。
       </div>
 
-      <h3>5-3. ハンズオン：デザイン → コード（2分）</h3>
+      <h3>5-3. ハンズオン：公開サンプルを複製してデザイン → コード（2分）</h3>
+      <p>自分の Figma ファイルがなくても試せるよう、Figma 公式の公開サンプル <strong>Simple Design System</strong> を複製（クローン）して使う。</p>
       <ol>
-        <li>Figma でフレームを選択 → 右クリック <strong>Copy link to selection</strong> でリンクを取得</li>
+        <li>公式サンプルを開く：<a href="https://www.figma.com/community/file/1380235722331273046/simple-design-system" target="_blank" rel="noopener">figma.com/community/file/…/simple-design-system</a></li>
+        <li><strong>Get a copy（複製を取得）</strong> をクリック → 自分の下書き（Drafts）にコピーされる（ファイル名に <code class="inline">(Community)</code> が付く）。URL の末尾に <code class="inline">/duplicate</code> を付けて開いても複製できる</li>
+        <li>複製したファイルでコンポーネント（例：ボタンやカード）を選択 → 右クリック <strong>Copy link to selection</strong> でリンクを取得</li>
         <li>Claude Code に貼り付けて依頼:</li>
       </ol>
       <div class="prompt-box">
@@ -555,7 +558,7 @@ allowed-tools: Read, Edit, Bash
       <h3>演習4</h3>
       <div class="prompt-box">
         <span class="label">やってみよう</span>
-        <p>任意の Figma ファイル（自分のデザイン or サンプル）でフレームを選び、リンクを渡してコード生成を試す</p>
+        <p>複製した Simple Design System から任意のコンポーネントを選び、リンクを渡してコード生成を試す</p>
       </div>
     </section>
 

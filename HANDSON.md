@@ -960,10 +960,15 @@ Figma 公式の MCP（リモート）を、3章で学んだ **プラグイン機
 > 💡 プラグインを使わず直接追加する場合: `claude mcp add --transport http figma https://mcp.figma.com/mcp`
 > 💡 ローカル（デスクトップ）方式は Figma デスクトップアプリ＋Dev 席（有料プラン）が必要。
 
-#### 5-3. ハンズオン：デザイン → コード（2分）
+#### 5-3. ハンズオン：公開サンプルを複製してデザイン → コード（2分）
 
-1. Figma でフレームを選択 → 右クリック **Copy link to selection** でリンクを取得
-2. Claude Code に貼り付けて依頼:
+自分の Figma ファイルがなくても試せるよう、Figma 公式の公開サンプル **Simple Design System** を複製（クローン）して使う。
+
+1. 公式サンプルを開く：<https://www.figma.com/community/file/1380235722331273046/simple-design-system>
+2. **Get a copy（複製を取得）** をクリック → 自分の下書き（Drafts）にコピーされる（ファイル名に `(Community)` が付く）
+   * URL の末尾に `/duplicate` を付けて開いても複製できる
+3. 複製したファイルでコンポーネント（例：ボタンやカード）を選択 → 右クリック **Copy link to selection** でリンクを取得
+4. Claude Code に貼り付けて依頼:
 
 ```
 このFigmaデザインを HTML + Tailwind CSS で実装して（リンク貼り付け）。
@@ -974,7 +979,7 @@ Figma 公式の MCP（リモート）を、3章で学んだ **プラグイン機
 
 ##### 演習4
 
-* 任意の Figma ファイル（自分のデザイン or サンプル）でフレームを選び、リンクを渡してコード生成を試す
+* 複製した Simple Design System から任意のコンポーネントを選び、リンクを渡してコード生成を試す
 
 ### 6. 実践：Laravel アプリ開発の一連フロー（20分）
 
