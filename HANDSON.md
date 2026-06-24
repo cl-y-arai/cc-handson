@@ -42,7 +42,7 @@
 | 回 | テーマ | 主な内容 | 実践 |
 |---|---|---|---|
 | 第1回 | Claude Code の基本 | Claude Code とは / 基本的な使い方 / コマンド | Claude Code を使ったソースコード解析 |
-| 第2回 | Claude Code を使ったソフトウェア開発 | CLAUDE.md / メモリ / Skills / Hooks | Claude Code を使ったコード変更 |
+| 第2回 | Claude Code を使ったソフトウェア開発 | 設定ファイル / Skills・プラグイン / skill-creator / Hooks / MCP / SubAgent | Claude Code を使ったコード変更 |
 | 第3回 | Claude Code を使ったチーム開発 | CLAUDE.md・Skills の共有 / コンテキスト管理 | チーム開発フローの体験 |
 
 ---
