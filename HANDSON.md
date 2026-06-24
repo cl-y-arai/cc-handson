@@ -1068,7 +1068,7 @@ devcontainer に PHP / Laravel / gh が入っていることを確認する。
 
 * Claude に聞いてもよい：「この環境に PHP と Laravel が入っているか確認して」
 
-#### 7-2. Hello World アプリの作成（2分）
+#### 7-2. Laravel の Hello World アプリの作成（2分）
 
 ```
 PHP と Laravel で「Hello World」を表示する Web アプリを作って。
