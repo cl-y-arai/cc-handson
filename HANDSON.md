@@ -943,7 +943,19 @@ composer require --dev "larastan/larastan"
 * **MCP（Model Context Protocol）** ＝ Claude Code に **外部サービスやツールを接続する標準規格**
 * 接続すると、その外部サービスの操作が「ツール」として Claude から使えるようになる（GitHub・Slack・Figma・DB など）
 * 接続方法は2つ: ① **プラグイン経由**（公式マーケットプレイスの外部連携プラグイン）/ ② `claude mcp add` で直接追加
-* 接続状況は `/mcp` で確認・認証できる
+
+##### `/mcp` コマンド
+
+接続した MCP サーバーの管理は `/mcp` で行う。
+
+| できること | 内容 |
+|------------|------|
+| 状態の確認 | 接続済みサーバーの一覧と状態（`connected` / `needs auth` / `failed`）を表示 |
+| 認証 | サーバーを選んで **Authenticate** → OAuth 認可（認証が必要なサーバー向け） |
+| ツールの確認 | そのサーバーが提供するツール一覧を確認 |
+| 有効/無効・再接続 | サーバーの有効化/無効化や、切れた接続の再接続 |
+
+> 💡 起動画面の「MCP servers: ◯ need auth」表示や `/status` からも状態が分かる。うまく動かないときは **まず `/mcp` で `connected` になっているか** を確認する。
 
 #### 5-2. Figma MCP を接続する（2分）
 
