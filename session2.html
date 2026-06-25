@@ -589,6 +589,16 @@ allowed-tools: Read, Edit, Bash
         <strong>💡 スキル / プラグイン との違い</strong>
         スキルは <strong>メイン会話の中</strong> で手順を実行する。サブエージェントは <strong>別コンテキストで実行してサマリーだけ返す</strong>。プラグインはそれらをまとめて配布する入れ物。
       </div>
+      <div class="callout">
+        <strong>💡 サブエージェントのメリット</strong>
+        <ul style="margin:8px 0 0;padding-left:20px;">
+          <li><strong>コンテキスト節約</strong>：大量出力（検索結果・diff・ログ）を別コンテキストに隔離し、メイン会話にはサマリーだけ返る → 本筋の文脈が長持ちする</li>
+          <li><strong>専門化で精度向上</strong>：観点を絞ったシステムプロンプト＋必要なツールだけに制限でき、レビュー／調査／デバッグなど用途特化の質が上がる</li>
+          <li><strong>並列化で高速</strong>：複数のサブエージェントを同時に走らせ、調査やレビューをまとめて進められる</li>
+          <li><strong>再利用・共有</strong>：<code class="inline">.claude/agents/</code> に置けばプロジェクト／チームで使い回せる</li>
+          <li><strong>安全性</strong>：ツール権限を絞れる（例：読み取り専用のレビュアーにして書き込みをさせない）</li>
+        </ul>
+      </div>
 
       <h3>6-2. サブエージェントの作成（4分）</h3>
       <p><code class="inline">/agents</code> を実行 → <strong>Library</strong> タブ → <strong>Create new agent</strong> で対話的に作れる（Personal＝全プロジェクト / Project＝チーム共有 を選択。「Generate with Claude」で雛形を自動生成も可）。</p>
@@ -627,6 +637,15 @@ model: sonnet
       <ul>
         <li>サブエージェントが別コンテキストで該当コードを読み込み・レビューし、<strong>メイン会話には結果のサマリーだけ</strong> 返ることを観察する</li>
         <li>「○○と△△モジュールを別々のサブエージェントで並行調査して」のように <strong>複数を並列実行</strong> させることもできる</li>
+      </ul>
+      <h4>実行中の表示</h4>
+      <p>委譲すると、メイン画面に <strong>別タスクとして実行中の状態</strong> が表示される:</p>
+<pre>● laravel-code-reviewer<span class="comment">(app/Http/Controllers の変更をレビュー)</span>
+  ⎿ Running… <span class="comment">(18s · ↓ 4.2k tokens · esc to interrupt)</span></pre>
+      <ul>
+        <li>実行中は <strong>エージェント名・経過時間・消費トークン</strong> が表示され、終わると <strong>結果のサマリーだけ</strong> がメイン会話に差し込まれる（途中の大量の読み込み・diff は残らない）</li>
+        <li><code class="inline">/agents</code> の <strong>Running</strong> タブで、実行中／最近終わったサブエージェントの一覧・停止・中身の確認ができる</li>
+        <li><code class="inline">Esc</code> で実行を中断できる</li>
       </ul>
       <h3>演習5</h3>
       <div class="prompt-box">
