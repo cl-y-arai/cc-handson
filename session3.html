@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Section 3：Claude Code を使ったチーム開発 — Claude Code ハンズオン</title>
+<style>
+  :root {
+    --accent: #d97757;
+    --accent-light: #f7e4d8;
+    --bg: #f5f3ee;
+    --code-bg: #2b2724;
+    --code-fg: #e0d9cc;
+    --border: #e4dfd5;
+    --text: #292524;
+    --muted: #78716c;
+    --ok: #16a34a;
+    --warn: #dc2626;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.8;
+  }
+  .layout { display: flex; max-width: 1180px; margin: 0 auto; }
+  nav {
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+    width: 260px;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 28px 18px;
+    border-right: 1px solid var(--border);
+    background: #fff;
+    flex-shrink: 0;
+  }
+  nav h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 12px; }
+  nav ol { list-style: none; margin: 0; padding: 0; }
+  nav li { margin: 0; }
+  nav a {
+    display: block;
+    padding: 6px 10px;
+    font-size: 14px;
+    color: var(--text);
+    text-decoration: none;
+    border-radius: 6px;
+    border-left: 3px solid transparent;
+  }
+  nav a:hover { background: var(--accent-light); border-left-color: var(--accent); }
+  main { flex: 1; min-width: 0; padding: 40px 48px 120px; }
+  header.hero {
+    background: linear-gradient(135deg, #d97757 0%, #a84e32 100%);
+    color: #fff;
+    padding: 48px;
+    border-radius: 16px;
+    margin-bottom: 40px;
+  }
+  header.hero h1 { margin: 0 0 12px; font-size: 30px; line-height: 1.4; }
+  header.hero p { margin: 0; opacity: .95; font-size: 16px; }
+  .badges { margin-top: 20px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .badge {
+    background: rgba(255,255,255,.2);
+    border: 1px solid rgba(255,255,255,.35);
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+  }
+  section { margin-bottom: 48px; scroll-margin-top: 20px; }
+  h2.step {
+    font-size: 24px;
+    border-bottom: 2px solid var(--accent);
+    padding-bottom: 8px;
+    margin-top: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .step-num {
+    background: var(--accent);
+    color: #fff;
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  h3 { font-size: 18px; margin-top: 28px; color: #a84e32; }
+  h4 { font-size: 15.5px; margin: 22px 0 8px; }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 16px 18px;
+    border-radius: 10px;
+    overflow-x: auto;
+    font-size: 13.5px;
+    line-height: 1.6;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+  }
+  pre .prompt { color: #38bdf8; }
+  pre .comment { color: #94a3b8; }
+  code.inline {
+    background: #efeae1;
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: .9em;
+    color: #a84e32;
+    border: 1px solid #e0d9cc;
+  }
+  .callout {
+    border-left: 4px solid var(--accent);
+    background: var(--accent-light);
+    padding: 14px 18px;
+    border-radius: 0 8px 8px 0;
+    margin: 18px 0;
+  }
+  .callout.tip { border-color: #0ea5e9; background: #e0f2fe; }
+  .callout.warn { border-color: var(--warn); background: #fef2f2; }
+  .callout.ok { border-color: var(--ok); background: #f0fdf4; }
+  .callout > strong:first-child { display: block; margin-bottom: 4px; }
+  .prompt-box {
+    background: #fff;
+    border: 2px dashed var(--accent);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin: 16px 0;
+  }
+  .prompt-box .label { font-size: 12px; color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+  .prompt-box p { margin: 6px 0 0; font-size: 16px; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  th, td { border: 1px solid var(--border); padding: 9px 12px; text-align: left; }
+  th { background: #efeae1; font-weight: 600; }
+  td code { font-size: .9em; }
+  footer { border-top: 1px solid var(--border); padding-top: 24px; color: var(--muted); font-size: 14px; }
+  .lesson {
+    background: #fbf3ec;
+    border: 1px solid #f0c9b4;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin: 18px 0;
+  }
+  .lesson h4 { margin: 0 0 8px; color: #a84e32; font-size: 15px; }
+  .lesson ul { margin: 0; padding-left: 20px; }
+  .shot { margin: 18px 0; }
+  .shot img {
+    max-width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.08);
+  }
+  .shot figcaption { font-size: 13px; color: var(--muted); margin-top: 6px; }
+  @media (max-width: 860px) {
+    nav { display: none; }
+    main { padding: 24px; }
+    header.hero { padding: 28px; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav>
+    <p style="margin:0 0 16px;"><a href="index.html" style="font-size:13px;color:var(--accent);text-decoration:none;font-weight:600;">← コースポータルへ戻る</a></p>
+    <h2>目次</h2>
+    <ol>
+      <li><a href="#goal">1. 到達目標・時間配分</a></li>
+      <li><a href="#sec2">2. チームでの CLAUDE.md 運用</a></li>
+      <li><a href="#sec3">3. プロジェクトナレッジの整理と投入</a></li>
+      <li><a href="#sec4">4. Skills の共有</a></li>
+      <li><a href="#sec5">5. 実践：チーム開発フロー</a></li>
+      <li><a href="#sec6">6. 実践：チーム開発フローの自動化</a></li>
+      <li><a href="#sec7">7. git worktree で並行開発</a></li>
+      <li style="list-style:none;"><a href="#cleanup">＊ 後片付け：作成したリポジトリの削除</a></li>
+      <li value="8"><a href="#sec8">8. まとめ・コース総括</a></li>
+      <li style="list-style:none;"><a href="#appendix-context">付録A. コンテキスト管理</a></li>
+      <li style="list-style:none;"><a href="#appendix">付録B. Claude の Projects</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <header class="hero">
+      <h1>Section 3：Claude Code を使ったチーム開発</h1>
+      <p>「個人の使いこなしをチームの標準にし、チームのフローとして回す」</p>
+      <div class="badges">
+        <span class="badge">120分</span>
+        <span class="badge">CLAUDE.md 共有</span>
+        <span class="badge">Skills 共有</span>
+        <span class="badge">git worktree</span>
+        <span class="badge">PR フロー</span>
+      </div>
+    </header>
+
+    <section id="goal">
+      <h2 class="step"><span class="step-num">1</span>到達目標・時間配分</h2>
+      <h3>到達目標</h3>
+      <ul>
+        <li>CLAUDE.md / Skills / settings をチームで共有・運用できる</li>
+        <li>プロジェクトの知識を「ルール・設計・手順」に仕分けて、CLAUDE.md・docs・Skills に配置できる</li>
+        <li><code class="inline">git worktree</code> で長めのタスクを別セッションに任せ、並行して開発を進められる</li>
+        <li>Issue 起点のチーム開発フロー（Issue → ブランチ → fix → レビュー → PR → マージ）を Claude Code で回せる</li>
+      </ul>
+      <h3>時間配分（120分）</h3>
+      <table>
+        <tr><th>#</th><th>内容</th><th>時間</th></tr>
+        <tr><td>1</td><td>オープニング（到達目標・時間配分の説明）</td><td>5分</td></tr>
+        <tr><td>2</td><td>チームでの CLAUDE.md 運用</td><td>12分</td></tr>
+        <tr><td>3</td><td>プロジェクトナレッジの整理と投入</td><td>15分</td></tr>
+        <tr><td>4</td><td>Skills の共有</td><td>15分</td></tr>
+        <tr><td>5</td><td>実践：チーム開発フロー</td><td>35分</td></tr>
+        <tr><td>6</td><td>実践：チーム開発フローの自動化</td><td>15分</td></tr>
+        <tr><td>7</td><td>git worktree で並行開発</td><td>15分</td></tr>
+        <tr><td>8</td><td>まとめ・コース総括</td><td>8分</td></tr>
+      </table>
+    </section>
+
+    <section id="sec2">
+      <h2 class="step"><span class="step-num">2</span>チームでの CLAUDE.md 運用（12分）</h2>
+
+      <h3>2-1. 共有の基本方針（6分）</h3>
+      <ul>
+        <li><code class="inline">&lt;repo&gt;/CLAUDE.md</code> を <strong>リポジトリにコミット</strong> してチーム全員で共有する</li>
+        <li>個人の好み（エディタ設定・出力スタイル等）は <code class="inline">CLAUDE.local.md</code> か <code class="inline">~/.claude/CLAUDE.md</code> へ</li>
+        <li>CLAUDE.md の変更も <strong>PR でレビュー</strong> する — 「Claude への指示」はチームの規約そのもの</li>
+      </ul>
+
+      <h3>2-2. 運用のアンチパターン（6分）</h3>
+      <table>
+        <tr><th>アンチパターン</th><th>対策</th></tr>
+        <tr><td>何でも書いて肥大化</td><td>定期的に棚卸し。コードから分かることは消す</td></tr>
+        <tr><td>個人ルールの混入</td><td><code class="inline">CLAUDE.local.md</code> に分離</td></tr>
+        <tr><td>書いたきり更新しない</td><td>規約変更・構成変更と同じ PR で更新</td></tr>
+      </table>
+    </section>
+
+    <section id="sec3">
+      <h2 class="step"><span class="step-num">3</span>プロジェクトナレッジの整理と投入（15分）</h2>
+      <p>チームが持つ知識（規約・設計の背景・作業手順・仕様書）をそのまま CLAUDE.md に詰め込むと、コンテキストを圧迫して指示が守られにくくなる。<strong>知識の種類ごとに置き場所を分け</strong>、常時読み込むものと必要なときだけ読むものを切り分けるのがコツ。</p>
+
+      <h3>3-1. 知識を仕分ける（5分）</h3>
+      <table>
+        <tr><th>知識の種類</th><th>例</th><th>置き場所</th><th>読み込まれるタイミング</th></tr>
+        <tr><td>常に守らせるルール</td><td>テストコマンド、コーディング規約、ブランチ運用</td><td><code class="inline">CLAUDE.md</code></td><td>セッション開始時に常時</td></tr>
+        <tr><td>特定のファイルを触るときだけのルール</td><td><code class="inline">scripts/</code> 配下のシェル規約、テストの書き方</td><td><code class="inline">.claude/rules/*.md</code>（frontmatter の <code class="inline">paths:</code> で対象を指定）</td><td>該当ファイルを扱うときに遅延読み込み</td></tr>
+        <tr><td>設計・背景の知識（長文）</td><td>アーキテクチャ、設計判断の記録、用語集</td><td><code class="inline">docs/*.md</code> に置き、CLAUDE.md から <code class="inline">@docs/architecture.md</code> で import、または「必要なとき docs/ を読む」と指示</td><td>import は常時／参照指示なら必要時</td></tr>
+        <tr><td>定型作業の手順</td><td>リリース手順、テスト生成の手順</td><td><code class="inline">.claude/skills/&lt;name&gt;/SKILL.md</code></td><td>呼び出し時・Claude が必要と判断した時</td></tr>
+        <tr><td>コード以外の資料</td><td>仕様書 PDF、議事録、顧客要件</td><td>claude.ai の Projects のナレッジ（付録B）</td><td>チャットで質問したとき</td></tr>
+      </table>
+      <ul>
+        <li>判断基準は <strong>「これを消したら Claude が失敗するか？」</strong>。YES なら CLAUDE.md、NO なら docs/ やスキルへ。CLAUDE.md は <strong>200行未満</strong> が目安（長いほどコンテキストを消費し、指示が守られにくくなる）</li>
+        <li>CLAUDE.md は managed 設定 → <code class="inline">~/.claude/CLAUDE.md</code> → プロジェクトの <code class="inline">CLAUDE.md</code> → <code class="inline">CLAUDE.local.md</code> の順に <strong>連結して</strong> 読み込まれる（上書きではない）。サブディレクトリの CLAUDE.md は、そのディレクトリのファイルを扱うときに読み込まれる</li>
+        <li><code class="inline">@path</code> による import は相対パス・絶対パス・<code class="inline">@~/...</code> が使え、import 先からさらに import できる（最大4段）。コードブロック内の <code class="inline">@</code> は無視される</li>
+        <li>個人メモ（auto-memory）は <strong>マシン単位で共有されない</strong>。チームで共有したい知識は必ずリポジトリ内のファイルに置く</li>
+      </ul>
+
+      <h3>3-2. 既存ドキュメントを Markdown 化して投入する（5分）</h3>
+      <ol>
+        <li><strong>集める</strong>：Confluence / Notion / Word / PDF などの既存資料を Markdown にして <code class="inline">docs/</code> に置く。変換は Claude に頼める（「この PDF を docs/architecture.md として Markdown 化して」）</li>
+        <li><strong>仕分ける</strong>：Claude に読ませて、常に守るルールと参照用の知識に分けさせる
+          <div class="prompt-box">
+            <span class="label">あなたの指示</span>
+            <p>docs/ の内容を読んで、常に守るべき規約と、必要なときに参照する設計知識に分けて。規約は CLAUDE.md に5〜10行で追記し、設計知識は docs/ に残して CLAUDE.md から @docs/... で参照させて</p>
+          </div>
+        </li>
+        <li><strong>つなぐ</strong>：CLAUDE.md からの import と、パス別ルール（<code class="inline">.claude/rules/</code>）を置く</li>
+        <li><strong>確かめる</strong>：<code class="inline">/memory</code> で読み込まれているファイルの一覧を、<code class="inline">/context</code> で消費量を確認する（付録A）</li>
+      </ol>
+<pre><span class="comment"># CLAUDE.md（抜粋）— ルールは短く、背景は import で</span>
+- テスト: `bats tests/`、静的解析: `shellcheck scripts/*.sh`
+- 設計の全体像は @docs/architecture.md を参照</pre>
+<pre><span class="comment"># .claude/rules/shell.md — scripts/ 配下を編集するときだけ読み込まれる</span>
+---
+paths:
+  - "scripts/**/*.sh"
+---
+- 先頭で `set -euo pipefail` を宣言する
+- 変数展開は必ずダブルクォートで囲む</pre>
+      <div class="callout tip">
+        <strong>💡 CLAUDE.md の変更も PR で</strong>
+        2章のとおり、CLAUDE.md・rules・docs の変更はチームの規約変更そのもの。PR でレビューしてからマージする。
+      </div>
+
+      <h3>3-3. 演習：agmsg のナレッジを投入する（5分）</h3>
+      <p>Section 2 で使った <code class="inline">agmsg</code> のディレクトリで <code class="inline">claude</code> を起動し、既存ドキュメントを仕分けて投入する。</p>
+      <div class="prompt-box">
+        <span class="label">あなたの指示</span>
+        <p>ARCHITECTURE.md と README.md を読んで、開発時に常に守るべき規約を CLAUDE.md に5行以内で追記して。設計の説明は CLAUDE.md には書かず、@ARCHITECTURE.md の参照にして</p>
+      </div>
+      <div class="prompt-box">
+        <span class="label">あなたの指示</span>
+        <p>scripts/ 配下の .sh を編集するときだけ適用されるルールを .claude/rules/shell.md に作って。set -euo pipefail と変数のダブルクォートを必須にして</p>
+      </div>
+      <ul>
+        <li><code class="inline">/memory</code> で CLAUDE.md と import 先が読み込まれていることを確認する</li>
+        <li>「メッセージ送信の流れを説明して」と聞き、<code class="inline">ARCHITECTURE.md</code> を根拠に答えることを確認する</li>
+        <li>「scripts/send.sh のエラーメッセージを分かりやすくして」と頼み、<code class="inline">.claude/rules/shell.md</code> の規約が守られることを確認する</li>
+        <li>できあがった CLAUDE.md・rules を <code class="inline">git diff</code> で確認する。5章で自分のリポジトリを作成したら同じ変更をコミットしておくと、以降の Issue 対応で Claude が規約を守るようになる</li>
+      </ul>
+    </section>
+
+    <section id="sec4">
+      <h2 class="step"><span class="step-num">4</span>Skills の共有（15分）</h2>
+
+      <h3>4-1. 共有できるもの（6分）</h3>
+      <table>
+        <tr><th>対象</th><th>配置場所</th><th>共有方法</th></tr>
+        <tr><td>Skills</td><td><code class="inline">.claude/skills/</code></td><td>リポジトリにコミット</td></tr>
+        <tr><td>Hooks・パーミッション設定</td><td><code class="inline">.claude/settings.json</code></td><td>リポジトリにコミット</td></tr>
+        <tr><td>SubAgent（レビュー観点の統一）</td><td><code class="inline">.claude/agents/</code></td><td>リポジトリにコミット</td></tr>
+        <tr><td>個人用設定</td><td><code class="inline">.claude/settings.local.json</code></td><td>git 管理外</td></tr>
+      </table>
+
+      <h3>4-2. チームでの活用例（4分）</h3>
+      <ul>
+        <li>テスト生成の手順を <code class="inline">/test-gen</code> スキルとして共有 → <strong>テスト観点の平準化</strong></li>
+        <li><code class="inline">PostToolUse</code> でリンタを強制 → <strong>「Claude が書いてもチーム標準のコード」を担保</strong></li>
+        <li>Section 2 で作った <code class="inline">shell-code-reviewer</code> サブエージェントをコミット → <strong>レビュー観点の統一</strong>（誰が回しても同じ基準でレビューされる）</li>
+        <li>新メンバーのオンボーディング：<code class="inline">claude</code> を起動して「このプロジェクトの開発の流れを教えて」</li>
+      </ul>
+
+      <h3>演習1</h3>
+      <div class="prompt-box">
+        <span class="label">やってみよう</span>
+        <p>Section 2 で作った test-gen スキルをコミットし、隣の受講者のリポジトリで動かしてもらう</p>
+      </div>
+
+      <h3>4-3. プラグイン（5分）</h3>
+      <p>Skills / Hooks / 設定を <strong>まとめて配布できる単位</strong> が <strong>プラグイン</strong>。<code class="inline">.claude/</code> への手動コミットより、バージョン管理・更新が楽で、マーケットプレイス経由で導入できる。</p>
+      <figure class="shot">
+        <img src="Image/skill-plugin-marketplace.svg" alt="Skill・プラグイン・マーケットプレイスの関係">
+        <figcaption>Skill・プラグイン・マーケットプレイスの関係 — マーケットプレイスがプラグインを並べ、プラグインが Skill 等を同梱する</figcaption>
+      </figure>
+      <ul>
+        <li><strong>Skill</strong> ＝ 手順書の最小単位（<code class="inline">SKILL.md</code>）。プラグインに同梱して配布できる</li>
+        <li><strong>プラグイン</strong> ＝ Skills・SubAgent・Hooks・MCP 接続を <strong>ひとまとめにした配布の入れ物</strong></li>
+        <li><strong>マーケットプレイス</strong> ＝ プラグインの <strong>配布カタログ</strong>（実体は GitHub リポジトリ。例: <code class="inline">claude-plugins-official</code>）</li>
+        <li>共有の流れ：作成者がプラグインをマーケットプレイスに登録 → 利用者は <code class="inline">/plugin marketplace add</code> で登録 → <code class="inline">/plugin install</code> で導入</li>
+      </ul>
+      <h4>セキュリティレビューを自動化する <code class="inline">security-guidance</code> プラグイン</h4>
+      <p>公式マーケットプレイス（<code class="inline">claude-plugins-official</code>）の <code class="inline">security-guidance</code> プラグインは、<strong>Claude が行う各変更を脆弱性観点でレビューし、見つけた問題を同じセッション内で修正させる</strong>。チーム全員が入れておけば、誰が書いても一定のセキュリティ水準が担保される。</p>
+      <h4>基本インストール</h4>
+      <p>Claude Code のセッション内で以下を実行する:</p>
+<pre>/plugin install security-guidance@claude-plugins-official</pre>
+      <p>マーケットプレイスが見つからない場合は、先に登録する:</p>
+<pre>/plugin marketplace add anthropics/claude-plugins-official</pre>
+      <p>インストール後、現在のセッションに即時適用する:</p>
+<pre>/reload-plugins</pre>
+      <ul>
+        <li><strong>user スコープ</strong> を選ぶと、同一マシンのすべてのセッションで自動的に読み込まれる</li>
+        <li><code class="inline">/plugin</code> を実行すると、Discover / Installed / Marketplaces / Errors のタブでプラグインを管理できる</li>
+      </ul>
+      <h4>チーム・プロジェクト全体への適用</h4>
+      <p>リポジトリに <code class="inline">.claude/settings.json</code> を追加すると、そのリポジトリをクローンした全員に自動適用される:</p>
+<pre>{
+  <span class="str">"enabledPlugins"</span>: {
+    <span class="str">"security-guidance@claude-plugins-official"</span>: true
+  }
+}</pre>
+      <ul>
+        <li>Claude Code on the Web（クラウドセッション）では <strong>user スコープのプラグインが引き継がれない</strong> ため、プロジェクト設定（上記）への記述が必要</li>
+        <li>組織全体に展開する場合は、管理者が <strong>マネージド設定</strong> で <code class="inline">enabledPlugins</code> を設定する</li>
+      </ul>
+      <div class="callout warn">
+        <strong>⚠️ プラグインは任意のコードを実行できる</strong>
+        導入は信頼できるマーケットプレイス・作者のものに限ること。
+      </div>
+    </section>
+
+    <section id="sec5">
+      <h2 class="step"><span class="step-num">5</span>実践：チーム開発フロー（35分）</h2>
+      <p>題材：Section 1・Section 2 で使った <strong>agmsg</strong>（CLI AI エージェント間のメッセージングツール。Bash + SQLite 製）。clone して自分のリポジトリとして作成し、<strong>Issue 起点の開発フロー</strong> を一周する。</p>
+      <figure class="shot">
+        <img src="Image/issue-flow.svg" alt="Issue 起点の開発フロー — Issue 作成 → ブランチ作成 → fix 実装 → レビュー・PR → マージ">
+        <figcaption>Issue 起点の開発フロー — マージ時の「Closes #N」で Issue が自動クローズし、フローが一周する</figcaption>
+      </figure>
+
+      <h3>5-1. 題材を clone して自分のリポジトリを作成（5分）</h3>
+      <p>題材の <code class="inline">agmsg</code> を clone し、gh コマンドで <strong>自分のアカウントのリポジトリ</strong> として作成する。以降の Issue・PR はすべて自分のリポジトリ上で回す。</p>
+<pre><span class="prompt">$</span> git clone https://github.com/kimotuki/agmsg
+<span class="prompt">$</span> cd agmsg
+<span class="prompt">$</span> claude</pre>
+      <div class="prompt-box">
+        <span class="label">あなたの指示</span>
+        <p>gh でこのコードを自分のアカウントの新しい public リポジトリとして作成して push して</p>
+      </div>
+      <ul>
+        <li><code class="inline">gh repo create agmsg --public --source=. --push</code> 相当が実行され、origin が自分のリポジトリに切り替わる</li>
+      </ul>
+
+      <h3>5-2. gh で Issue を作成（5分）</h3>
+      <div class="prompt-box">
+        <span class="label">あなたの指示</span>
+        <p>「README に日本語のクイックスタートを追記してほしい」という Issue を gh で作成して</p>
+      </div>
+      <ul>
+        <li><code class="inline">gh issue create</code> が実行される — タイトル・本文も Claude が整えてくれる</li>
+        <li><strong>Issue 本文がそのまま Claude への要件になる</strong> — 再現手順や期待動作を丁寧に書くほど後工程の精度が上がる</li>
+      </ul>
+
+      <h3>5-3. ブランチを切って fix を実装（10分）</h3>
+      <div class="prompt-box">
+        <span class="label">あなたの指示</span>
+        <p>Issue #1 に対応するブランチを切って</p>
+      </div>
+      <ul>
+        <li><code class="inline">gh issue view 1</code> で内容を確認し、<code class="inline">fix/issue-1</code> のようなブランチが作られる</li>
+      </ul>
+      <div class="prompt-box">
+        <span class="label">あなたの指示</span>
+        <p>Issue #1 を読んで、Plan Mode で対応方針を立ててから修正して</p>
+      </div>
+      <ul>
+        <li>Claude が Issue 本文を読み、計画を提示 → レビューして承認 → 実装 → テスト</li>
+        <li>人間は <strong>計画と差分のレビュー</strong> に集中する</li>
+      </ul>
+
+      <h3>5-4. スキルでレビューして PR を作成（5分）</h3>
+      <p>push する前に、組み込みスキルで自己レビューする。</p>
+<pre>/code-review</pre>
+      <p>指摘があれば修正してから PR を作成：</p>
+      <div class="prompt-box">
+        <span class="label">あなたの指示</span>
+        <p>Issue #1 を closes する PR を作成して</p>
+      </div>
+      <ul>
+        <li>PR 本文に <code class="inline">Closes #1</code> が入り、<strong>マージすると Issue が自動クローズ</strong> される</li>
+      </ul>
+
+      <div class="callout tip">
+        <strong>💡 main が先に進んでいたら</strong>
+        PR を作る前に main を取り込み、競合があれば Claude に解消させる：「origin/main を取り込んで、競合があれば解消して。bats tests/ が通ることを確認して」。解消結果は <code class="inline">git diff</code> で必ず人が確認する。
+      </div>
+
+      <h3>5-5. 他の人の PR をレビューしてマージ（10分）</h3>
+      <p>受講者同士でペアを組み、互いの PR をレビューする。まず相手から次の2つの情報を教えてもらう:</p>
+      <ul>
+        <li><strong>リポジトリの URL</strong> — <code class="inline">https://github.com/&lt;相手のアカウント&gt;/agmsg</code></li>
+        <li><strong>レビューしてほしい PR の番号</strong> — 相手が 5-4 で作成した PR の番号</li>
+      </ul>
+      <div class="callout tip">
+        <strong>ヒント</strong>
+        PR の URL（<code class="inline">https://github.com/&lt;相手のアカウント&gt;/agmsg/pull/&lt;N&gt;</code>）を1つ教えてもらえば、リポジトリの URL と PR 番号の両方が分かる。
+      </div>
+      <p>教えてもらったリポジトリを clone し、<code class="inline">claude --from-pr &lt;N&gt;</code> で起動すると、<strong>PR の文脈（差分・説明文・レビューコメント）を読み込んだ状態</strong> でセッションを開始できる。</p>
+<pre><span class="prompt">$</span> git clone https://github.com/&lt;相手のアカウント&gt;/agmsg
+<span class="prompt">$</span> cd agmsg
+<span class="prompt">$</span> claude --from-pr &lt;N&gt;   <span class="comment"># N は教えてもらった PR 番号</span></pre>
+<pre>/review</pre>
+      <p>指摘があれば、レビュー結果を相手の PR にコメントとして残す:</p>
+      <div class="prompt-box">
+        <span class="label">あなたの指示</span>
+        <p>レビュー結果を PR にコメントして</p>
+      </div>
+      <ul>
+        <li><code class="inline">gh pr comment &lt;N&gt;</code> 相当が実行され、相手の PR にコメントが付く（public リポジトリなら、コラボレーターでなくてもコメントは書き込める）</li>
+        <li>PR の作者は <strong>自分のリポジトリ</strong> で <code class="inline">claude --from-pr &lt;自分のPR番号&gt;</code> を起動し、「レビューコメントに対応して」→ 修正 → push</li>
+      </ul>
+      <p>対応が終わって問題がなくなったら、<strong>PR の作者（リポジトリのオーナー）が</strong> 自分の PR をマージする:</p>
+      <div class="prompt-box">
+        <span class="label">あなたの指示</span>
+        <p>この PR をマージして</p>
+      </div>
+      <ul>
+        <li><code class="inline">gh pr merge</code> が実行され、<code class="inline">Closes #1</code> により Issue も自動クローズ — <strong>Issue 起点のフローが一周</strong> する</li>
+      </ul>
+    </section>
+
+    <section id="sec6">
+      <h2 class="step"><span class="step-num">6</span>実践：チーム開発フローの自動化（15分）</h2>
+      <p>5章で回した「Issue 起点の開発フロー」は毎回同じ手順の繰り返し — つまり <strong>スキル化の好対象</strong>。フロー全体を1つのスキルに落とし込み、1コマンドで回せるようにする。</p>
+      <div class="prompt-box">
+        <span class="label">あなたの指示</span>
+        <p>issue-review-flow というスキルを作って。Issue 番号を引数で受け取り、<br>
+        1. gh issue view で Issue の内容を確認<br>
+        2. fix/issue-&lt;番号&gt; ブランチを作成<br>
+        3. 対応方針を立てて、確認してから修正を実装<br>
+        4. /code-review でレビューし、妥当な指摘を修正<br>
+        5. コミットして PR を作成（本文に Closes #&lt;番号&gt; を入れる）<br>
+        という手順にして。</p>
+      </div>
+      <p>作成できたら、実行する前に生成されたスキルの内容を確認する。指示した5つの手順がそのまま入っているか、意図しない操作が紛れ込んでいないかをレビューしておく:</p>
+<pre><span class="prompt">$</span> cat .claude/skills/issue-review-flow/SKILL.md</pre>
+      <p>内容に問題がなければ、新しい Issue を1つ作って実行してみる:</p>
+<pre>/issue-review-flow 2</pre>
+      <ul>
+        <li>定型フローをスキル化すれば、<strong>チームの誰でも同じ品質のフローを1コマンドで再現</strong> できる</li>
+        <li><code class="inline">.claude/skills/issue-review-flow/</code> をコミットすれば、4章で学んだとおりチーム全員に共有される</li>
+      </ul>
+      <div class="callout tip">
+        <strong>💡 GitHub 上でも回す — Claude Code GitHub Actions</strong>
+        <code class="inline">/install-github-app</code> を実行すると、GitHub App のインストールとワークフローの追加まで対話的にセットアップできる。以後は PR や Issue のコメントで <code class="inline">@claude</code> にメンションすると、GitHub Actions 上の Claude Code がレビューや修正を行い、結果をコメント・コミットで返す。認証はサブスクリプションなら <code class="inline">claude setup-token</code> で作る OAuth トークン（Pro / Max / Team / Enterprise）、API 利用なら API キーをリポジトリの Secret に登録する。Issue / PR の本文は <strong>信頼できない入力</strong> なので、Actions 側の権限は最小にし、マージは人がレビューしてから行う。
+      </div>
+      <div class="callout tip">
+        <strong>💡 CI・スクリプトから使う — ヘッドレスモード</strong>
+        <code class="inline">claude -p "&lt;指示&gt;"</code> で対話なしに実行でき、<code class="inline">--allowedTools</code> で使えるツールを、<code class="inline">--output-format json</code> で出力形式を指定できる。CI では <code class="inline">--bare</code> を付けると CLAUDE.md や hooks の自動読み込みを省いて速く・再現性よく動く。例：マージ済み PR からリリースノートを生成する
+      </div>
+<pre><span class="prompt">$</span> claude -p "前回のタグ以降にマージされた PR を gh で集めて、CHANGELOG.md にリリースノートとして追記して" \
+    --allowedTools "Read,Edit,Bash(gh pr list:*),Bash(git tag:*),Bash(git log:*)"</pre>
+    </section>
+
+    <section id="sec7">
+      <h2 class="step"><span class="step-num">7</span>git worktree で並行開発（15分）</h2>
+      <p><code class="inline">git worktree</code> は <strong>1つのリポジトリから複数の作業ディレクトリを切り出す</strong> Git の機能。ブランチごとに独立したディレクトリで作業できるので、「長めのタスクを別の Claude Code セッションに任せつつ、自分はメインの作業を続ける」という並行開発ができる。</p>
+      <figure class="shot">
+        <img src="Image/worktree-diagram.svg" alt="git worktree の概念図 — 1つのリポジトリ（.git 本体を持つメインの作業ディレクトリ）から、feature-a 用と bugfix-123 用の2つの worktree が切り出され、それぞれ別ターミナルの Claude Code セッションで動く">
+        <figcaption>git worktree — .git（履歴）は共有しつつ、作業ディレクトリとブランチは独立。変更が衝突しない</figcaption>
+      </figure>
+
+      <h3>7-1. 一般的な使い方（5分）</h3>
+      <p><code class="inline">--worktree</code> の一般的な使い方としては、複数のターミナルでそれぞれ別の worktree セッションを動かすパターンがある。</p>
+<pre><span class="comment"># Terminal 1: 機能 A の開発</span>
+<span class="prompt">$</span> claude --worktree feature-a
+
+<span class="comment"># Terminal 2: 同時にバグ修正</span>
+<span class="prompt">$</span> claude --worktree bugfix-123</pre>
+      <p>それぞれのセッションは <strong>別ブランチ・別ディレクトリ</strong> で動くので、変更が衝突しない。</p>
+      <p>手動で worktree を作ってから Claude Code を起動する方法もある。新しいブランチを作る場合は <code class="inline">-b</code> を付け、既存のブランチを使う場合はブランチ名をそのまま指定する:</p>
+<pre><span class="comment"># 新しいブランチ feature-a を作って worktree を作成</span>
+<span class="prompt">$</span> git worktree add ../project-feature-a -b feature-a
+
+<span class="comment"># 既存のブランチ bugfix-123 から worktree を作成</span>
+<span class="prompt">$</span> git worktree add ../project-bugfix bugfix-123
+
+<span class="comment"># 作成した worktree に移動して Claude Code を起動</span>
+<span class="prompt">$</span> cd ../project-feature-a &amp;&amp; claude</pre>
+      <p><code class="inline">--worktree</code> オプションは、この手順を自動化してくれるもの。</p>
+
+      <h3>7-2. 演習：長めのタスクを worktree に任せる（10分）</h3>
+      <p>5章で作成した自分の <code class="inline">agmsg</code> を題材に、長めのタスクを別 worktree の Claude Code に任せてみる。<strong>新しいターミナルを開いて</strong>、worktree セッションを起動する:</p>
+<pre><span class="prompt">$</span> cd agmsg
+<span class="prompt">$</span> claude --worktree feature-export</pre>
+      <div class="prompt-box">
+        <span class="label">あなたの指示（worktree セッション側）</span>
+        <p>メッセージ履歴を Markdown ファイルに書き出すエクスポート機能（scripts/export.sh）を追加して。bats テストも書いて、bats tests/ が通ることを確認して</p>
+      </div>
+      <ul>
+        <li>タスクが走っている間も、<strong>元のターミナルのセッションはそのまま使える</strong> — 6章のスキル改良や別の Issue 対応を並行して進める</li>
+        <li>worktree 側のタスクが終わったら、いつも通り「コミットして PR を作成して」まで任せられる</li>
+      </ul>
+      <p>worktree の状態確認と、マージ後の片付け:</p>
+<pre><span class="prompt">$</span> git worktree list             <span class="comment"># 作成された worktree の一覧</span>
+<span class="prompt">$</span> git worktree remove &lt;パス&gt;    <span class="comment"># 不要になった worktree を削除</span></pre>
+    </section>
+
+    <section id="cleanup">
+      <h2 class="step"><span class="step-num">＊</span>後片付け：作成したリポジトリの削除</h2>
+      <p>5章で自分のアカウントに作成した <code class="inline">agmsg</code> はハンズオン用の練習リポジトリ。演習が終わったら、以下のコマンドを手動で実行して削除しておく。<code class="inline">gh repo delete</code> には追加の権限（<code class="inline">delete_repo</code> スコープ）が必要なので、先に <code class="inline">gh auth refresh</code> で付与してから実行する:</p>
+<pre><span class="prompt">$</span> gh auth refresh -h github.com -s delete_repo
+<span class="prompt">$</span> gh repo delete &lt;自分のアカウント&gt;/agmsg --yes</pre>
+      <div class="callout warn">
+        <strong>注意</strong>
+        リポジトリの削除は取り消せない。削除対象が <code class="inline">&lt;自分のアカウント&gt;/agmsg</code> であること（clone 元の <code class="inline">kimotuki/agmsg</code> や自分の別リポジトリを指定していないこと）を必ず確認してから実行する。
+      </div>
+      <ul>
+        <li>ローカルの clone が不要になったら、あわせて <code class="inline">cd .. &amp;&amp; rm -rf agmsg</code> で削除しておく</li>
+        <li>5-5 で clone した相手のリポジトリのローカルコピーも同様に削除してよい（リポジトリ本体の削除は作成した本人が行う）</li>
+      </ul>
+    </section>
+
+    <section id="sec8">
+      <h2 class="step"><span class="step-num">✓</span>まとめ・コース総括（8分）</h2>
+      <h3>Section 3 のまとめ</h3>
+      <ul>
+        <li>CLAUDE.md・Skills・settings は <strong>リポジトリにコミットしてチームの資産</strong> にする</li>
+        <li>長めのタスクは <code class="inline">git worktree</code> で別セッションに任せ、メインの作業と並行して進める</li>
+        <li>人間の仕事は <strong>計画のレビューと差分のレビュー</strong> に寄っていく</li>
+      </ul>
+      <h3>コース総括</h3>
+      <table>
+        <tr><th>Section</th><th>身につけたこと</th></tr>
+        <tr><td>Section 1</td><td>エージェントの仕組み・基本コマンド・ソースコード解析</td></tr>
+        <tr><td>Section 2</td><td>CLAUDE.md / Skills / Hooks・安全なコード変更の進め方</td></tr>
+        <tr><td>Section 3</td><td>チームでの共有・PR ベースの開発フロー・worktree での並行開発</td></tr>
+      </table>
+      <div class="callout ok">
+        <strong>✅ ここから先</strong>
+        日常業務で使い続けることが最良の学習。まずは「調査・解析タスク」から Claude Code に任せてみよう。
+      </div>
+    </section>
+
+    <section id="appendix-context">
+      <h2 class="step"><span class="step-num">付</span>付録A：コンテキスト管理 — /context・/compact・/clear と SubAgent の使い分け</h2>
+
+      <h3>A-1. なぜ管理が必要か</h3>
+      <ul>
+        <li>コンテキストウィンドウは <strong>有限</strong>（トークン上限がある）</li>
+        <li>埋まると自動コンパクション（要約圧縮）が走り、<strong>細部の情報が失われる</strong></li>
+        <li>長いセッションで「さっき言ったことを忘れる」のは大半これが原因</li>
+      </ul>
+      <h4>主要モデルのコンテキストウィンドウ</h4>
+      <table>
+        <tr><th>モデル</th><th>コンテキストウィンドウ</th><th>最大出力</th></tr>
+        <tr><td>Claude Fable 5</td><td>100万トークン</td><td>128K</td></tr>
+        <tr><td>Claude Opus 4.8</td><td>100万トークン</td><td>128K</td></tr>
+        <tr><td>Claude Sonnet 5</td><td>100万トークン</td><td>128K</td></tr>
+        <tr><td>Claude Haiku 4.5</td><td>20万トークン</td><td>64K</td></tr>
+      </table>
+      <ul>
+        <li>コンテキストウィンドウ ＝ モデルが一度に扱える情報量の上限。<strong>会話履歴だけでなく、CLAUDE.md・読み込んだスキル・ツールの実行結果もすべてここを消費する</strong></li>
+        <li>上限はモデルごとに異なり、大きいモデルでも「無限」ではない</li>
+      </ul>
+
+      <h3>A-2. 3つのコマンド</h3>
+      <table>
+        <tr><th>コマンド</th><th>動作</th><th>使いどころ</th></tr>
+        <tr><td><code class="inline">/context</code></td><td>現在のコンテキスト使用量を可視化</td><td>長い作業の途中で残量チェック</td></tr>
+        <tr><td><code class="inline">/compact</code></td><td>会話を要約して圧縮（指示も添えられる）</td><td>作業は続けたいが残量が心配なとき</td></tr>
+        <tr><td><code class="inline">/clear</code></td><td>コンテキストを完全リセット</td><td>別タスクに切り替えるとき</td></tr>
+      </table>
+<pre>/compact 実装方針とテスト結果は残して、探索の過程は要約して</pre>
+
+      <h3>A-3. 運用のコツ</h3>
+      <ul>
+        <li><strong>1タスク1セッション</strong> が基本 — タスクが変わったら <code class="inline">/clear</code></li>
+        <li>大事な決定事項は <code class="inline">#</code> で CLAUDE.md に書き出してから <code class="inline">/clear</code> する（<strong>外部メモリ化</strong>）</li>
+        <li>コンパクションに頼るより、<strong>自分で要点を保存して新しいセッションを始める</strong> ほうが品質が安定する</li>
+      </ul>
+      <div class="callout tip">
+        <strong>💡 TIPS：設定もコンテキストを消費する</strong>
+        CLAUDE.md の肥大化や Skill を多く登録することも、セッション開始時からコンテキストを消費する。適時最小化を心掛けながら環境を整えていくことが重要。
+      </div>
+
+      <h3>A-4. SubAgent でコンテキストを分離する</h3>
+      <p><code class="inline">/compact</code> や <code class="inline">/clear</code> は「溜まってから減らす」対処。<strong>最初からメイン会話に入れない</strong> のが Section 2 の6章で扱った <strong>SubAgent</strong>。サブエージェントは <strong>別のコンテキストウィンドウ</strong> で動き、何十個ファイルを読んでも、テスト出力が何千行あっても、メイン会話に戻るのは <strong>結果の要約だけ</strong>。</p>
+      <table>
+        <tr><th>向いている作業</th><th>例</th></tr>
+        <tr><td>広く読む調査</td><td>「scripts/ 配下で SQLite を直接呼んでいる箇所を全部洗い出して」</td></tr>
+        <tr><td>長い出力の分析</td><td>「bats tests/ を実行して、失敗したテストの原因だけ要約して」</td></tr>
+        <tr><td>観点を絞ったレビュー</td><td>6章で作った <code class="inline">shell-code-reviewer</code> にレビューを任せる</td></tr>
+        <tr><td>メイン会話と無関係な脇道</td><td>「この依存ライブラリの最新版の変更点を調べて」</td></tr>
+      </table>
+      <ul>
+        <li>使い方は自然言語でよい：「<strong>サブエージェントで</strong>調べて」「<strong>別コンテキストで</strong>レビューして」。調査の規模が大きいと Claude が自分でサブエージェントを使うこともある</li>
+        <li>サブエージェントは <strong>メイン会話の内容を知らない</strong>。目的・対象ファイル・返してほしい形（一覧だけ／要約だけ）を依頼文に含める</li>
+        <li>戻ってくるのは要約なので細部は落ちる。あとで参照したい調査結果は「<code class="inline">docs/notes/</code> にファイルとして保存して」と頼み、ファイルに残す</li>
+        <li>節約されるのは <strong>メイン会話のコンテキスト</strong>。サブエージェント側でもトークンは消費するので、総量が減るわけではない</li>
+        <li>さらに大きく分けたいときは Section 2 付録B の <strong>Agent Teams</strong>（独立コンテキストのチームメイトを並列に動かす）</li>
+      </ul>
+      <div class="prompt-box">
+        <span class="label">あなたの指示</span>
+        <p>サブエージェントで scripts/ 配下を調査して、SQLite を直接呼んでいるファイルと行番号の一覧だけ返して。調査の途中経過はメイン会話に出さないで</p>
+      </div>
+
+      <h4>演習</h4>
+      <div class="prompt-box">
+        <span class="label">やってみよう</span>
+        <p>/context で現在の使用量を確認 → /compact を指示付きで実行 → 使用量の変化を見る</p>
+      </div>
+      <div class="prompt-box">
+        <span class="label">やってみよう</span>
+        <p>同じ調査（scripts/ 配下の SQLite 呼び出しの洗い出し）を、① メイン会話で直接頼んだ場合と ② サブエージェントに任せた場合で行い、/context の増え方を比べる</p>
+      </div>
+    </section>
+
+    <section id="appendix">
+      <h2 class="step"><span class="step-num">付</span>付録B：Claude の Projects — チームの知識と作業をまとめる</h2>
+      <p>「Projects」という名前の機能は現在2つある。どちらも <strong>チームで文脈を共有する</strong> ための入れ物だが、用途が異なる。</p>
+      <table>
+        <tr><th>観点</th><th>claude.ai の Projects</th><th>Claude Code の Projects</th></tr>
+        <tr><td>場所</td><td>claude.ai（チャット）</td><td>claude.ai/code・デスクトップアプリの Code タブ</td></tr>
+        <tr><td>中身</td><td>ナレッジ（ファイル・テキスト）＋カスタム指示＋チャット</td><td>リポジトリ＋プロジェクト指示＋並列で動くクラウドスレッド</td></tr>
+        <tr><td>得意なこと</td><td>仕様書・設計書をチームで参照しながら相談する</td><td>複数タスクを Claude に並列実行させ、PR まで持っていく</td></tr>
+        <tr><td>利用条件</td><td>全プラン（Free は5件まで。共有は Team / Enterprise）</td><td>Pro / Max のパブリックベータ（Team / Enterprise は未提供）</td></tr>
+      </table>
+
+      <h3>B-1. claude.ai の Projects — ナレッジと指示をチームで共有する</h3>
+      <ul>
+        <li><strong>プロジェクト</strong> ＝ チャット履歴と専用の <strong>ナレッジベース</strong>、<strong>カスタム指示</strong> をひとまとめにしたワークスペース。プロジェクト内のチャットはすべてナレッジと指示を前提に動く</li>
+        <li>ナレッジには <strong>ファイル</strong>（PDF / DOCX / CSV / TXT / HTML / XLSX / 画像など）、<strong>テキスト</strong>、<strong>GitHub リポジトリのファイル・フォルダ</strong>、<strong>Google Drive のフォルダ</strong> を追加できる。容量がコンテキスト上限に近づくと <strong>RAG（関連部分だけを検索して読む）モード</strong> に自動で切り替わり、最大で約10倍まで入る</li>
+        <li><strong>Team / Enterprise</strong> では、プロジェクトを <strong>組織全体に公開</strong> するか <strong>招待したメンバーだけ</strong> に共有できる。権限は <strong>Can view</strong>（閲覧・質問のみ）と <strong>Can edit</strong>（指示・ナレッジ・メンバーの編集）の2段階。プロジェクト内のチャットはデフォルトでは共有されない</li>
+        <li>CLAUDE.md との関係：<strong>CLAUDE.md は Claude Code（ターミナル）への指示</strong>、<strong>Projects の指示は claude.ai（チャット）への指示</strong>。同じ「チームの前提知識」を、コードを書く場と相談する場の両方に置く、と考えると整理しやすい</li>
+      </ul>
+      <h4>演習</h4>
+      <ol>
+        <li>claude.ai → <strong>Projects</strong> → <strong>New project</strong> で「agmsg チーム」を作成する</li>
+        <li><strong>カスタム指示</strong> に次を設定する:
+          <div class="prompt-box">
+            <span class="label">カスタム指示</span>
+            <p>日本語で答える。回答は必ずプロジェクトのナレッジ（agmsg のドキュメント）に基づき、根拠にしたファイル名を添える。ナレッジに無いことは「ドキュメントに記載なし」と答える。</p>
+          </div>
+        </li>
+        <li><strong>ナレッジ</strong> に agmsg の <code class="inline">README.md</code> と <code class="inline">ARCHITECTURE.md</code>（GitHub から追加、またはアップロード）と、Section 2 で整えた <code class="inline">CLAUDE.md</code> を追加する</li>
+        <li>プロジェクト内で質問する:
+          <div class="prompt-box">
+            <span class="label">あなたの指示</span>
+            <p>新しくチームに入ったメンバー向けに、agmsg のセットアップから最初のメッセージ送信までを3ステップでまとめて</p>
+          </div>
+        </li>
+      </ol>
+      <ul>
+        <li>回答に <strong>根拠ファイル名が添えられている</strong> こと、ナレッジに無い質問（例：「Windows 版はある？」）に「記載なし」と答えることを確認する</li>
+        <li>Team / Enterprise の場合：ペアの相手に <strong>Can view</strong> で共有し、相手側から同じプロジェクトに質問してもらう</li>
+      </ul>
+
+      <h3>B-2. Claude Code の Projects — 複数タスクを並列に回す</h3>
+      <ul>
+        <li>claude.ai/code 上の <strong>プロジェクト会話（コーディネーター）</strong> が、タスクごとに <strong>スレッド</strong>（クラウドで動く Claude Code セッション）を立てて <strong>並列に実行</strong> する。スレッドは PC を閉じても動き続ける</li>
+        <li>各スレッドはプロジェクトの <strong>リポジトリ・ファイル・Google Drive</strong>、<strong>プロジェクト指示</strong>、環境変数を共有した状態で開始する</li>
+        <li><strong>Overview</strong> ペインでスレッドの状態（Working / Waiting on you / Ready for review など）を一覧でき、<strong>Pull requests</strong> タブで各スレッドが作った PR をまとめて追える</li>
+        <li><strong>プロジェクト指示</strong> は Project settings → Memory → Project Instructions（最大16,000文字）に書く。対象ブランチ・確認方法・承認が必要な操作など、3章で CLAUDE.md に書いたルールと同じ考え方</li>
+        <li>すでに動かしているクラウドセッションから <strong>Continue as a project</strong> で始めたり、<strong>Move to project</strong> で既存プロジェクトに取り込んだりもできる</li>
+      </ul>
+      <div class="callout tip">
+        <strong>💡 提供状況</strong>
+        Pro / Max プランのパブリックベータ（段階的に提供中）。Team / Enterprise プランではまだ使えないため、利用できる人だけ試す。
+      </div>
+      <h4>演習</h4>
+      <ol>
+        <li>claude.ai/code → <strong>Projects</strong> → <strong>New project</strong>。Name は「agmsg」、Context に <strong>5章で作成した自分の agmsg リポジトリ</strong> を追加して <strong>Create project</strong></li>
+        <li>Project settings → Memory → <strong>Project Instructions</strong> に次を設定する:
+          <div class="prompt-box">
+            <span class="label">Project Instructions</span>
+            <p>ブランチは main から切る。変更後は bats tests/ と shellcheck scripts/*.sh で確認する。PR を作る前に /code-review を実行し、妥当な指摘は修正する。</p>
+          </div>
+        </li>
+        <li>プロジェクト会話で、2つのタスクを続けて依頼する:
+          <div class="prompt-box">
+            <span class="label">あなたの指示</span>
+            <p>README に英語版のセットアップ手順を追記して</p>
+          </div>
+          <div class="prompt-box">
+            <span class="label">あなたの指示</span>
+            <p>scripts/search.sh に、表示件数を絞る --limit N オプションを追加してテストも足して</p>
+          </div>
+        </li>
+      </ol>
+      <ul>
+        <li><strong>Overview</strong> で2つのスレッドが並列に動くのを観察し、<strong>Ready for review</strong> になったら <strong>Pull requests</strong> タブから PR を開いて差分をレビューする</li>
+        <li>5章で手で回した「Issue → ブランチ → 実装 → レビュー → PR」を、コーディネーターがスレッド単位で肩代わりしていることを確認する</li>
+      </ul>
+      <h4>参考リンク</h4>
+      <ul>
+        <li><a href="https://support.claude.com/en/articles/9517075-what-are-projects" target="_blank" rel="noopener">Claude ヘルプセンター — What are projects?</a></li>
+        <li><a href="https://support.claude.com/en/articles/9519189-manage-project-visibility-and-sharing" target="_blank" rel="noopener">Claude ヘルプセンター — Manage project visibility and sharing</a></li>
+        <li><a href="https://support.claude.com/en/articles/11473015-retrieval-augmented-generation-rag-for-projects" target="_blank" rel="noopener">Claude ヘルプセンター — Retrieval augmented generation (RAG) for projects</a></li>
+        <li><a href="https://code.claude.com/docs/ja/claude-projects" target="_blank" rel="noopener">Claude Code ドキュメント — Projects</a></li>
+      </ul>
+    </section>
+
+    <footer>
+      <p>Claude Code ハンズオン — Section 3：Claude Code を使ったチーム開発<br>Copyright © AI-Driven Development Study Group</p>
+      <p><a href="session2.html">← Section 2</a> ／ <a href="index.html">コースポータル</a></p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>
