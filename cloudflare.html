@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Backlog.md を Cloudflare Workers で公開する — Claude Code ハンズオン</title>
+<style>
+  :root {
+    --accent: #d97757;
+    --accent-light: #f7e4d8;
+    --bg: #f5f3ee;
+    --code-bg: #2b2724;
+    --code-fg: #e0d9cc;
+    --border: #e4dfd5;
+    --text: #292524;
+    --muted: #78716c;
+    --ok: #16a34a;
+    --warn: #dc2626;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.8;
+  }
+  .layout { display: flex; max-width: 1180px; margin: 0 auto; }
+  nav {
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+    width: 260px;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 28px 18px;
+    border-right: 1px solid var(--border);
+    background: #fff;
+    flex-shrink: 0;
+  }
+  nav h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 12px; }
+  nav ol { list-style: none; margin: 0; padding: 0; }
+  nav li { margin: 0; }
+  nav a {
+    display: block;
+    padding: 6px 10px;
+    font-size: 14px;
+    color: var(--text);
+    text-decoration: none;
+    border-radius: 6px;
+    border-left: 3px solid transparent;
+  }
+  nav a:hover { background: var(--accent-light); border-left-color: var(--accent); }
+  main { flex: 1; min-width: 0; padding: 40px 48px 120px; }
+  header.hero {
+    background: linear-gradient(135deg, #d97757 0%, #a84e32 100%);
+    color: #fff;
+    padding: 48px;
+    border-radius: 16px;
+    margin-bottom: 40px;
+  }
+  header.hero h1 { margin: 0 0 12px; font-size: 30px; line-height: 1.4; }
+  header.hero p { margin: 0; opacity: .95; font-size: 16px; }
+  .badges { margin-top: 20px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .badge {
+    background: rgba(255,255,255,.2);
+    border: 1px solid rgba(255,255,255,.35);
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+  }
+  section { margin-bottom: 48px; scroll-margin-top: 20px; }
+  h2.step {
+    font-size: 24px;
+    border-bottom: 2px solid var(--accent);
+    padding-bottom: 8px;
+    margin-top: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .step-num {
+    background: var(--accent);
+    color: #fff;
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  h3 { font-size: 18px; margin-top: 28px; color: #a84e32; }
+  h4 { font-size: 15.5px; margin: 22px 0 8px; }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 16px 18px;
+    border-radius: 10px;
+    overflow-x: auto;
+    font-size: 13.5px;
+    line-height: 1.6;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+  }
+  pre .prompt { color: #38bdf8; }
+  pre .comment { color: #94a3b8; }
+  code.inline {
+    background: #efeae1;
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: .9em;
+    color: #a84e32;
+    border: 1px solid #e0d9cc;
+  }
+  .callout {
+    border-left: 4px solid var(--accent);
+    background: var(--accent-light);
+    padding: 14px 18px;
+    border-radius: 0 8px 8px 0;
+    margin: 18px 0;
+  }
+  .callout.tip { border-color: #0ea5e9; background: #e0f2fe; }
+  .callout.warn { border-color: var(--warn); background: #fef2f2; }
+  .callout.ok { border-color: var(--ok); background: #f0fdf4; }
+  .callout > strong:first-child { display: block; margin-bottom: 4px; }
+  .prompt-box {
+    background: #fff;
+    border: 2px dashed var(--accent);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin: 16px 0;
+  }
+  .prompt-box .label { font-size: 12px; color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+  .prompt-box p { margin: 6px 0 0; font-size: 16px; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  th, td { border: 1px solid var(--border); padding: 9px 12px; text-align: left; }
+  th { background: #efeae1; font-weight: 600; }
+  td code { font-size: .9em; }
+  footer { border-top: 1px solid var(--border); padding-top: 24px; color: var(--muted); font-size: 14px; }
+  .lesson {
+    background: #fbf3ec;
+    border: 1px solid #f0c9b4;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin: 18px 0;
+  }
+  .lesson h4 { margin: 0 0 8px; color: #a84e32; font-size: 15px; }
+  .lesson ul { margin: 0; padding-left: 20px; }
+  .shot { margin: 18px 0; }
+  .shot img {
+    max-width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.08);
+  }
+  .shot figcaption { font-size: 13px; color: var(--muted); margin-top: 6px; }
+  @media (max-width: 860px) {
+    nav { display: none; }
+    main { padding: 24px; }
+    header.hero { padding: 28px; }
+  }
+</style>
+
+</head>
+<body>
+<div class="layout">
+  <nav>
+    <p style="margin:0 0 16px;"><a href="index.html" style="font-size:13px;color:var(--accent);text-decoration:none;font-weight:600;">← コースポータルへ戻る</a></p>
+    <h2>目次</h2>
+    <ol>
+      <li><a href="#intro">1. 概要：何を作るか</a></li>
+      <li><a href="#signup">2. 手順1：Cloudflare のアカウントを作成する</a></li>
+      <li><a href="#worker">3. 手順2：ログインして Worker を作成する</a></li>
+      <li><a href="#access">4. 手順3：Cloudflare Access で認証を掛ける</a></li>
+      <li><a href="#github">5. 手順4：GitHub リポジトリを連携する</a></li>
+      <li><a href="#production">6. 手順5：本番の URL で開く</a></li>
+      <li><a href="#preview">7. 手順6：preview ブランチを preview-〜 の URL で開く</a></li>
+      <li><a href="#files">8. 参考：リポジトリに置く Cloudflare 用の設定</a></li>
+      <li><a href="#trouble">9. トラブルシューティング</a></li>
+      <li><a href="#cleanup">10. 後片付け</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <header class="hero">
+      <h1>Backlog.md を Cloudflare Workers で公開する</h1>
+      <p>「GitHub の fork を Cloudflare につなぎ、main と preview の2つのブランチをそれぞれの URL で公開する」</p>
+      <div class="badges">
+        <span class="badge">所要 約30分</span>
+        <span class="badge">Cloudflare</span>
+        <span class="badge">Workers</span>
+        <span class="badge">Containers</span>
+        <span class="badge">GitHub 連携</span>
+        <span class="badge">Preview</span>
+        <span class="badge">Access</span>
+      </div>
+    </header>
+
+    <section id="intro">
+      <h2 class="step"><span class="step-num">1</span>概要：何を作るか</h2>
+      <p>Section 3 では、チームで PR を出し合いながら Backlog.md を開発する。この資料では、その変更を <strong>ブランチごとにインターネット上の URL で確認できる環境</strong> を Cloudflare Workers に用意する。<a href="backlog-md.html">Backlog.md 環境</a> の Codespaces が「自分だけが開ける開発環境」なのに対し、こちらは「インターネット上にあり、ログインしたチームのメンバーなら誰でも開ける環境」になる。</p>
+      <table>
+        <tr><th>ブランチ</th><th>公開される URL</th><th>いつ更新されるか</th></tr>
+        <tr><td><code class="inline">main</code></td><td><code class="inline">https://backlog-md.&lt;サブドメイン&gt;.workers.dev</code></td><td><code class="inline">main</code> に push（PR をマージ）したとき</td></tr>
+        <tr><td><code class="inline">preview</code></td><td><code class="inline">https://preview-backlog-md.&lt;サブドメイン&gt;.workers.dev</code></td><td><code class="inline">preview</code> に push したとき</td></tr>
+      </table>
+      <p><code class="inline">&lt;サブドメイン&gt;</code> は手順2 で決める自分専用の workers.dev サブドメイン。<code class="inline">preview</code> 以外のブランチも、push すると <code class="inline">&lt;ブランチ名&gt;-backlog-md.&lt;サブドメイン&gt;.workers.dev</code> で公開される（Cloudflare の <strong>Worker Previews</strong> という機能）。</p>
+      <h3>しくみ</h3>
+      <ul>
+        <li>Cloudflare の <strong>Workers Builds</strong> が GitHub の fork を見張り、push されるたびにビルドとデプロイを行う</li>
+        <li>Backlog.md は Bun 専用の API（<code class="inline">Bun.serve</code>）とファイルの読み書きを使うため、Workers の実行環境そのものでは動かない。そこで Worker の後ろに <strong>Cloudflare Containers</strong> のコンテナを置き、その中で <code class="inline">bun src/cli.ts browser</code> をそのまま起動する。アプリのソースコードは変えない</li>
+        <li>コンテナはしばらくアクセスが無いと止まり、次のアクセスで数秒かけて起動し直す</li>
+        <li>Backlog.md にはログインの仕組みが無いため、Cloudflare の <strong>Access</strong> で Worker の前にログインを掛け、許可したメールドメインの人だけが開けるようにする</li>
+      </ul>
+      <h3>前提</h3>
+      <ul>
+        <li><a href="backlog-md.html#fork">Backlog.md 環境 の手順1</a> で作った自分の fork（<code class="inline">&lt;自分のアカウント&gt;/Backlog.md-handson</code>）</li>
+        <li>fork に Cloudflare 用の設定ファイル（<code class="inline">wrangler.jsonc</code>・<code class="inline">Dockerfile</code> など）が入っていること。中身は <a href="#files">8章</a> を参照</li>
+        <li>メールアドレスと、Workers Paid プランの支払いに使うクレジットカード</li>
+      </ul>
+      <div class="callout warn">
+        <strong>⚠️ Containers は有料プランが必要</strong>
+        Cloudflare Containers は <strong>Workers Paid プラン（月額 5 米ドル）</strong> でのみ使える。アカウント作成は無料だが、手順1 で Workers Paid に登録が必要。使い終わったら 10章の手順でプランを解約する。料金の最新情報は <a href="https://developers.cloudflare.com/containers/platform/pricing/" target="_blank" rel="noopener">Containers の料金ページ</a> で確認する。
+      </div>
+    </section>
+
+    <section id="signup">
+      <h2 class="step"><span class="step-num">2</span>手順1：Cloudflare のアカウントを作成する</h2>
+      <p><a href="https://dash.cloudflare.com/sign-up" target="_blank" rel="noopener">dash.cloudflare.com/sign-up</a> を開き、メールアドレスとパスワードを入力して <strong>Sign up</strong> を押す。</p>
+      <figure class="shot">
+        <img src="Image/cloudflare/01-signup.png" alt="Cloudflare のサインアップ画面。メールアドレス・パスワード欄と Sign up ボタンを赤枠で強調">
+        <figcaption>メールアドレスとパスワードを入れて <strong>Sign up</strong></figcaption>
+      </figure>
+      <p>届いた確認メールのリンクを開いて、メールアドレスを確認する。確認が終わるとダッシュボードに入れる。</p>
+      <figure class="shot">
+        <img src="Image/cloudflare/02-verify-email.png" alt="Cloudflare から届いた確認メール。Verify email のリンクを赤枠で強調">
+        <figcaption>確認メールのリンクを開く。メールが見当たらなければ迷惑メールフォルダも確認する</figcaption>
+      </figure>
+      <h3>Workers Paid プランに登録する</h3>
+      <p>ダッシュボード左のメニューで <strong>Workers &amp; Pages</strong> を開き、<strong>Plans</strong>（プラン）から <strong>Workers Paid</strong> を選んで支払い情報を登録する。</p>
+      <figure class="shot">
+        <img src="Image/cloudflare/03-workers-paid.png" alt="Workers のプラン選択画面。Workers Paid を赤枠で強調">
+        <figcaption>Free ではなく <strong>Workers Paid</strong> を選ぶ。Containers を使うために必要</figcaption>
+      </figure>
+      <div class="callout tip">
+        <strong>💡 画面の表記について</strong>
+        Cloudflare のダッシュボードは頻繁に更新される。ボタンの名前や位置がこの資料と違うときは、同じ意味の項目を探す。表示言語は右上のアカウントメニューから日本語にも切り替えられる。
+      </div>
+    </section>
+
+    <section id="worker">
+      <h2 class="step"><span class="step-num">3</span>手順2：ログインして Worker を作成する</h2>
+      <p><a href="https://dash.cloudflare.com/login" target="_blank" rel="noopener">dash.cloudflare.com/login</a> からログインし、左のメニューの <strong>Workers &amp; Pages</strong> を開いて <strong>Create application</strong> を押す。</p>
+      <figure class="shot">
+        <img src="Image/cloudflare/04-workers-pages.png" alt="Workers &amp; Pages の画面。Create application ボタンを赤枠で強調">
+        <figcaption>左メニューの <strong>Workers &amp; Pages</strong> → <strong>Create application</strong></figcaption>
+      </figure>
+      <p>初めて Workers を使うときは、workers.dev のサブドメインを決める画面が出る。ここで決めた名前が、公開 URL の <code class="inline">&lt;サブドメイン&gt;</code> になる（例：自分の GitHub アカウント名）。</p>
+      <figure class="shot">
+        <img src="Image/cloudflare/05-subdomain.png" alt="workers.dev サブドメインの入力画面">
+        <figcaption>サブドメインは全 Cloudflare ユーザーで一意。使われていれば別の名前にする</figcaption>
+      </figure>
+      <p>作成方法の一覧から <strong>Start with Hello World!</strong> を選ぶ。Worker の名前（Worker name）は <strong><code class="inline">backlog-md</code></strong> にして <strong>Deploy</strong> を押す。</p>
+      <figure class="shot">
+        <img src="Image/cloudflare/06-create-worker.png" alt="Worker の作成画面。Worker name 欄に backlog-md と入力し、Deploy ボタンを赤枠で強調">
+        <figcaption>名前は必ず <code class="inline">backlog-md</code>。リポジトリの <code class="inline">wrangler.jsonc</code> の <code class="inline">"name"</code> と一致しないと、手順4 のビルドが失敗する</figcaption>
+      </figure>
+      <p>デプロイが終わると、<code class="inline">https://backlog-md.&lt;サブドメイン&gt;.workers.dev</code> で「Hello World!」が表示される。この中身は手順4 で Backlog.md に置き換わる。次の手順3 で、置き換わる前に認証を掛けておく。</p>
+      <figure class="shot">
+        <img src="Image/cloudflare/07-hello-world.png" alt="作成した Worker の概要画面。workers.dev の URL を赤枠で強調">
+        <figcaption>Worker の概要画面。URL をクリックすると Hello World! が開く</figcaption>
+      </figure>
+    </section>
+
+    <section id="access">
+      <h2 class="step"><span class="step-num">4</span>手順3：Cloudflare Access で認証を掛ける</h2>
+      <p>Backlog.md の Web UI にはログインの仕組みが無く、URL を知っていれば誰でもタスクを見たり編集したりできる。そこで、GitHub と連携して Backlog.md を公開する <strong>前に</strong>、Cloudflare の <strong>Access</strong>（Zero Trust の機能）で Worker 全体にログインを掛ける。ここでは、<strong>指定したメールドメイン（例：会社のドメイン）のメールアドレスを持つ人だけ</strong> が、メールで届くワンタイムコード（One-time PIN）でログインして開けるようにする。</p>
+      <table>
+        <tr><th>#</th><th>やること</th><th>どこで</th></tr>
+        <tr><td>3-1</td><td>Zero Trust の初期設定（チーム名・プラン）</td><td>Zero Trust</td></tr>
+        <tr><td>3-2</td><td>ログイン方法に One-time PIN を追加</td><td>Zero Trust</td></tr>
+        <tr><td>3-3</td><td>Worker に Access を掛け、許可するメールドメインを指定</td><td>Workers &amp; Pages</td></tr>
+        <tr><td>3-4</td><td>ログインできるか確認</td><td>ブラウザ</td></tr>
+      </table>
+
+      <h3>3-1. Zero Trust の初期設定</h3>
+      <p>ダッシュボード左のメニューで <strong>Zero Trust</strong> を開く。初めて開くと初期設定の画面になるので、<strong>チーム名</strong> を決める（ログイン画面の URL <code class="inline">https://&lt;チーム名&gt;.cloudflareaccess.com</code> に使われる）。</p>
+      <figure class="shot">
+        <img src="Image/cloudflare/08-zero-trust-team.png" alt="Zero Trust の初期設定画面。チーム名の入力欄を赤枠で強調">
+        <figcaption>チーム名は全 Cloudflare ユーザーで一意。例：自分の GitHub アカウント名</figcaption>
+      </figure>
+      <p>続けてプランを選ぶ画面になるので <strong>Free</strong> を選び、支払い情報を入力して進める。Free プランでも支払い情報の入力は求められるが、請求はされない。</p>
+      <figure class="shot">
+        <img src="Image/cloudflare/09-zero-trust-plan.png" alt="Zero Trust のプラン選択画面。Free プランを赤枠で強調">
+        <figcaption><strong>Free</strong> を選ぶ。Workers Paid とは別のプランで、こちらは無料</figcaption>
+      </figure>
+      <div class="callout tip">
+        <strong>💡 2段階認証を求められたら</strong>
+        Zero Trust を使うには Cloudflare アカウントの2段階認証（two-factor authentication）を有効にする必要がある。求められたら、右上のアカウントメニューの <strong>Profile</strong> → <strong>Authentication</strong> から設定する。
+      </div>
+
+      <h3>3-2. ログイン方法に One-time PIN を追加</h3>
+      <p>新しく作った Zero Trust の組織では、ログイン方法が「Cloudflare のアカウントでログイン」だけになっている。Cloudflare アカウントを持たないチームメンバーもメールアドレスだけでログインできるよう、<strong>One-time PIN</strong> を追加する。</p>
+      <p>Zero Trust の画面で <strong>Integrations</strong> → <strong>Identity providers</strong> → <strong>Add new identity provider</strong> を開き、<strong>One-time PIN</strong> を選んで保存する。</p>
+      <figure class="shot">
+        <img src="Image/cloudflare/10-otp-idp.png" alt="Identity providers の追加画面。One-time PIN を赤枠で強調">
+        <figcaption><strong>Integrations</strong> → <strong>Identity providers</strong> → <strong>Add new identity provider</strong> → <strong>One-time PIN</strong></figcaption>
+      </figure>
+
+      <h3>3-3. Worker に Access を掛ける</h3>
+      <p><strong>Workers &amp; Pages</strong> に戻って <code class="inline">backlog-md</code> を開き、<strong>Access</strong> タブで <strong>Protect this Worker behind Access</strong> を選ぶ。次のように設定して <strong>Apply Access</strong> を押す。</p>
+      <table>
+        <tr><th>項目</th><th>設定する値</th></tr>
+        <tr><td>保護する範囲</td><td><strong>All traffic</strong>（本番の URL と preview の URL の両方。<strong>Previews only</strong> だと本番の URL が誰でも開けるままになる）</td></tr>
+        <tr><td>Authentication policy</td><td><strong>Email domain</strong> を選び、許可するメールのドメインを入力する（例：<code class="inline">example.co.jp</code>）</td></tr>
+      </table>
+      <figure class="shot">
+        <img src="Image/cloudflare/11-worker-access.png" alt="Worker の Access タブ。All traffic と Email domain の入力欄、Apply Access ボタンを赤枠で強調">
+        <figcaption><strong>Access</strong> タブ → <strong>Protect this Worker behind Access</strong> → <strong>All traffic</strong> ＋ <strong>Email domain</strong> → <strong>Apply Access</strong></figcaption>
+      </figure>
+      <ul>
+        <li>Worker に掛けた Access は、workers.dev の URL だけでなく <strong>Preview の URL（<code class="inline">preview-backlog-md.〜</code> など）にもまとめて効く</strong>。あとから作った Preview にも効く</li>
+        <li>許可する人を後から変えるときは、Zero Trust の <strong>Access controls</strong> → <strong>Policies</strong> で該当のポリシーを <strong>Edit</strong> し、<strong>Include</strong> のルール（<strong>Emails ending in</strong>：ドメイン、<strong>Emails</strong>：個別のアドレス）を編集して <strong>Save</strong> する</li>
+      </ul>
+      <div class="callout warn">
+        <strong>⚠️ フリーメールのドメインは指定しない</strong>
+        <code class="inline">gmail.com</code> のようなフリーメールのドメインを指定すると、そのドメインでメールアドレスを作れる <strong>世界中の誰でも</strong> ログインできてしまう。会社など、自分たちだけが使うドメインを指定する。チームにフリーメールの人がいる場合は、ポリシーの <strong>Include</strong> に <strong>Emails</strong> のルールを足して、その人のアドレスを個別に許可する。
+      </div>
+
+      <h3>3-4. ログインできるか確認する</h3>
+      <p>ブラウザのシークレットウィンドウで <code class="inline">https://backlog-md.&lt;サブドメイン&gt;.workers.dev</code> を開く。Hello World! の代わりに Access のログイン画面が出れば、認証が掛かっている。</p>
+      <ol>
+        <li>許可したドメインのメールアドレスを入力し、<strong>Send login code</strong> を押す</li>
+        <li>メールで届いたコードを入力して <strong>Sign in</strong> を押す（コードの有効期限は10分。1回しか使えない）</li>
+        <li>Hello World! が表示されれば成功</li>
+      </ol>
+      <figure class="shot">
+        <img src="Image/cloudflare/12-access-login.png" alt="Cloudflare Access のログイン画面。メールアドレスの入力欄と Send login code ボタンを赤枠で強調">
+        <figcaption>Access のログイン画面。許可されていないアドレスを入れても「コードを送信した」と表示されるが、メールは届かない</figcaption>
+      </figure>
+      <div class="callout warn">
+        <strong>⚠️ Web UI の自動更新は効かなくなる</strong>
+        Worker の Access タブで掛けた認証は、今のところ <strong>WebSocket の接続を通さない</strong>（403 になる）。Backlog.md の Web UI は、タスクが変わったことを WebSocket で受け取って画面を自動更新しているため、この構成では自動更新が効かない。最新の状態を見るときはページを再読み込みする。ページの表示やタスクの読み込みは、ソースを見る限り通常の HTTP で行われているので、影響を受けない見込み。
+      </div>
+    </section>
+
+    <section id="github">
+      <h2 class="step"><span class="step-num">5</span>手順4：GitHub リポジトリを連携する</h2>
+      <p>作成した <code class="inline">backlog-md</code> の画面で <strong>Settings</strong> タブを開き、<strong>Build</strong> の <strong>Git repository</strong> にある <strong>Connect</strong> を押す。</p>
+      <figure class="shot">
+        <img src="Image/cloudflare/13-build-connect.png" alt="Worker の Settings タブ。Build セクションの Connect ボタンを赤枠で強調">
+        <figcaption><strong>Settings</strong> → <strong>Build</strong> → <strong>Connect</strong></figcaption>
+      </figure>
+      <p>接続先に <strong>GitHub</strong> を選ぶと、GitHub の画面に移って <strong>Cloudflare Workers &amp; Pages</strong> という GitHub App のインストールを求められる。<strong>Only select repositories</strong> を選び、自分の fork <code class="inline">Backlog.md-handson</code> だけを指定して <strong>Install &amp; Authorize</strong> を押す。</p>
+      <figure class="shot">
+        <img src="Image/cloudflare/14-github-app.png" alt="GitHub の Cloudflare Workers &amp; Pages アプリのインストール画面。Only select repositories と Backlog.md-handson を赤枠で強調">
+        <figcaption>すべてのリポジトリではなく、fork だけにアクセスを許可する</figcaption>
+      </figure>
+      <p>Cloudflare の画面に戻ったら、次のように設定して <strong>Connect</strong> を押す。</p>
+      <table>
+        <tr><th>項目</th><th>設定する値</th></tr>
+        <tr><td>Git account</td><td>自分の GitHub アカウント</td></tr>
+        <tr><td>Git repository</td><td><code class="inline">Backlog.md-handson</code></td></tr>
+        <tr><td>Branch control（本番のブランチ）</td><td><code class="inline">main</code></td></tr>
+        <tr><td>Enable Preview Builds</td><td><strong>チェックを入れる</strong>（main 以外のブランチも公開する）</td></tr>
+        <tr><td>Build command</td><td>空欄のまま</td></tr>
+        <tr><td>Deploy command</td><td><code class="inline">npx wrangler deploy</code>（既定値のまま）</td></tr>
+        <tr><td>Preview command</td><td><code class="inline">npx wrangler preview</code>（既定値のまま）</td></tr>
+        <tr><td>Root directory</td><td>空欄のまま（リポジトリのルート）</td></tr>
+      </table>
+      <figure class="shot">
+        <img src="Image/cloudflare/15-build-settings.png" alt="ビルド設定の画面。リポジトリ、ブランチ、Enable Preview Builds、Deploy command、Preview command を赤枠で強調">
+        <figcaption>リポジトリとブランチを選び、<strong>Enable Preview Builds</strong> にチェック。コマンドは既定値のまま</figcaption>
+      </figure>
+      <div class="callout warn">
+        <strong>⚠️ Preview command を <code class="inline">wrangler deploy</code> にしない</strong>
+        Preview command（main 以外のブランチで動くコマンド）を <code class="inline">npx wrangler deploy</code> に変えると、preview ブランチの内容で本番の URL が上書きされてしまう。既定値の <code class="inline">npx wrangler preview</code> のままにする。
+      </div>
+    </section>
+
+    <section id="production">
+      <h2 class="step"><span class="step-num">6</span>手順5：本番の URL で開く</h2>
+      <p>連携が終わると、<code class="inline">main</code> の最新コミットで最初のビルドが始まる。Worker の <strong>Deployments</strong>（または Builds）タブでログを確認できる。始まらないときは、fork の <code class="inline">main</code> に何かコミットを push するか、画面の再実行ボタンを押す。</p>
+      <figure class="shot">
+        <img src="Image/cloudflare/16-build-log.png" alt="ビルドログの画面。成功を示す表示を赤枠で強調">
+        <figcaption>初回はコンテナのイメージを作るため数分かかる。Success になれば完了</figcaption>
+      </figure>
+      <p>ビルドが成功したら <code class="inline">https://backlog-md.&lt;サブドメイン&gt;.workers.dev</code> を開く。Hello World! の代わりに Backlog.md の Kanban Board が表示されれば成功。</p>
+      <figure class="shot">
+        <img src="Image/cloudflare/17-kanban-production.png" alt="workers.dev の URL で開いた Backlog.md の Kanban Board">
+        <figcaption>Access のログインの後に表示される。最初のアクセスではコンテナの起動を待つため、表示まで数秒かかる</figcaption>
+      </figure>
+      <div class="callout warn">
+        <strong>⚠️ Web UI での編集は残らない</strong>
+        手順3 の Access で、開けるのは許可したメールドメインの人だけになっている。ただし、ログインした人は Web UI からタスクを編集できる。コンテナのディスクは起動のたびにリポジトリの内容に戻るため、Web UI での編集は残らない（タスクの変更は git でコミットして PR で取り込む）。
+      </div>
+    </section>
+
+    <section id="preview">
+      <h2 class="step"><span class="step-num">7</span>手順6：preview ブランチを preview-〜 の URL で開く</h2>
+      <p>ローカルの clone で <code class="inline">preview</code> ブランチを作って push する。</p>
+<pre><span class="prompt">$</span> git switch main &amp;&amp; git pull
+<span class="prompt">$</span> git switch -c preview
+<span class="prompt">$</span> git push -u origin preview</pre>
+      <p>push すると Workers Builds が Preview command（<code class="inline">npx wrangler preview</code>）でビルドし、ブランチ名を名前にした Preview を作る。ビルドが終わったら次の URL を開く。</p>
+<pre>https://preview-backlog-md.&lt;サブドメイン&gt;.workers.dev</pre>
+      <figure class="shot">
+        <img src="Image/cloudflare/18-preview-url.png" alt="preview-backlog-md の URL で開いた Backlog.md の画面">
+        <figcaption>preview ブランチの内容が <code class="inline">preview-backlog-md.〜</code> で開く。本番の URL には影響しない</figcaption>
+      </figure>
+      <ul>
+        <li>以後、<code class="inline">preview</code> に push するたびに同じ URL の中身が新しいコミットに置き換わる</li>
+        <li>PR を作ると、Cloudflare がビルド結果と Preview の URL を PR にコメントしてくれる。レビューする人はその URL で動作を確かめられる（Access のログインが必要。許可したメールドメインの人だけが開ける）</li>
+        <li>動作を確認できたら <code class="inline">preview</code> → <code class="inline">main</code> の PR をマージすると、本番の URL に反映される</li>
+      </ul>
+      <div class="callout tip">
+        <strong>💡 Preview ごとに別のコンテナが立つ</strong>
+        Preview には、本番とは別のコンテナと Durable Object が自動で用意される。preview で試した内容が本番のコンテナに混ざることはない。Cloudflare のドキュメントでは、Preview でのコンテナ対応は「部分的（partial）」とされているので、うまく動かないときは 9章を参照する。
+      </div>
+    </section>
+
+    <section id="files">
+      <h2 class="step"><span class="step-num">8</span>参考：リポジトリに置く Cloudflare 用の設定</h2>
+      <p>Workers Builds は、リポジトリのルートにある次のファイルを見てビルドとデプロイを行う。Backlog.md 本体のソースは変えず、コンテナの中で Web UI を起動するための設定だけを足している。</p>
+      <table>
+        <tr><th>ファイル</th><th>役割</th></tr>
+        <tr><td><code class="inline">wrangler.jsonc</code></td><td>Worker の名前、コンテナの設定、Preview 用の設定</td></tr>
+        <tr><td><code class="inline">cloudflare/worker.ts</code></td><td>受けたリクエストをすべてコンテナに転送する Worker</td></tr>
+        <tr><td><code class="inline">Dockerfile</code></td><td>Bun のイメージにソースを入れ、Web UI を起動するコンテナの定義</td></tr>
+        <tr><td><code class="inline">.dockerignore</code></td><td>コンテナに入れないファイル</td></tr>
+        <tr><td><code class="inline">package.json</code></td><td>開発用の依存に <code class="inline">wrangler</code>（4.135.0 以上）と <code class="inline">@cloudflare/containers</code> を追加</td></tr>
+      </table>
+<pre><span class="comment">// wrangler.jsonc</span>
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "backlog-md",
+  "main": "cloudflare/worker.ts",
+  "compatibility_date": "2026-11-01",
+  "containers": [
+    { "class_name": "BacklogContainer", "image": "./Dockerfile", "max_instances": 1, "instance_type": "basic" }
+  ],
+  "durable_objects": {
+    "bindings": [{ "class_name": "BacklogContainer", "name": "BACKLOG" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["BacklogContainer"] }],
+  <span class="comment">// Preview は本番の設定を引き継がないので、同じ内容をもう一度書く</span>
+  "previews": {
+    "containers": [
+      { "class_name": "BacklogContainer", "image": "./Dockerfile", "max_instances": 1, "instance_type": "basic" }
+    ],
+    "durable_objects": {
+      "bindings": [{ "class_name": "BacklogContainer", "name": "BACKLOG" }]
+    }
+  }
+}</pre>
+<pre><span class="comment">// cloudflare/worker.ts</span>
+import { Container } from "@cloudflare/containers";
+
+export class BacklogContainer extends Container {
+  defaultPort = 8080; <span class="comment">// コンテナ内で待ち受けるポート</span>
+  sleepAfter = "10m"; <span class="comment">// 10分アクセスが無ければ止める</span>
+}
+
+type Env = {
+  BACKLOG: { getByName(name: string): { fetch(request: Request): Promise&lt;Response&gt; } };
+};
+
+export default {
+  async fetch(request: Request, env: Env): Promise&lt;Response&gt; {
+    <span class="comment">// 全員が同じ1台のコンテナを見る</span>
+    return env.BACKLOG.getByName("main").fetch(request);
+  },
+};</pre>
+<pre><span class="comment"># Dockerfile</span>
+FROM oven/bun:1.4.4
+RUN apt-get update \
+ &amp;&amp; apt-get install -y --no-install-recommends socat \
+ &amp;&amp; rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY . .
+RUN bun install --frozen-lockfile --ignore-scripts
+<span class="comment"># コンテナには .git が無いので、git を使わずファイルだけで動かす</span>
+RUN bun src/cli.ts config set filesystemOnly true \
+ &amp;&amp; bun src/cli.ts config set remoteOperations false
+EXPOSE 8080
+<span class="comment"># Web UI は 127.0.0.1 でしか待ち受けないため、socat で 8080 番から中継する</span>
+CMD ["sh", "-c", "bun src/cli.ts browser --no-open --port 6420 &amp; exec socat TCP-LISTEN:8080,fork,reuseaddr TCP:127.0.0.1:6420"]</pre>
+<pre><span class="comment"># .dockerignore</span>
+.git
+node_modules</pre>
+      <ul>
+        <li><strong>socat で中継する理由</strong>：Backlog.md の Web UI はソースコードで待ち受けアドレスが <code class="inline">127.0.0.1</code> に固定されており、コンテナの外（Worker）からは届かない。ソースを変えずに済むよう、コンテナ内で <code class="inline">0.0.0.0:8080</code> → <code class="inline">127.0.0.1:6420</code> に中継している</li>
+        <li><strong><code class="inline">--ignore-scripts</code></strong>：<code class="inline">bun install</code> 時に husky が git フックを設定しようとして、<code class="inline">.git</code> の無いコンテナ内で失敗するのを避ける</li>
+        <li><strong><code class="inline">max_instances: 1</code></strong>：同時に動かすコンテナを1台に抑え、料金がかさまないようにしている</li>
+      </ul>
+      <div class="callout tip">
+        <strong>💡 自分の fork に設定が無いとき</strong>
+        Codespace のターミナルで <code class="inline">bun add -d wrangler @cloudflare/containers</code> を実行し、上の4ファイルを作ってコミット・push する（<code class="inline">bun.lock</code> も一緒にコミットする）。ファイルの作成はローカルの Claude Code に「cloudflare.html の8章の構成で Cloudflare 用の設定を作って」と頼んでもよい。
+      </div>
+    </section>
+
+    <section id="trouble">
+      <h2 class="step"><span class="step-num">9</span>トラブルシューティング</h2>
+      <table>
+        <tr><th>症状</th><th>対処</th></tr>
+        <tr><td>ビルドが「Worker name が一致しない」旨のエラーで失敗する</td><td>手順2 で付けた Worker の名前と、<code class="inline">wrangler.jsonc</code> の <code class="inline">"name"</code> が違う。どちらも <code class="inline">backlog-md</code> にそろえる</td></tr>
+        <tr><td>Containers が使えない旨のエラーで失敗する</td><td>Workers Paid プランに登録していない。手順1 の「Workers Paid プランに登録する」を行い、ビルドを再実行する</td></tr>
+        <tr><td>ビルドで <code class="inline">wrangler preview</code> が見つからない</td><td><code class="inline">package.json</code> の <code class="inline">wrangler</code> が 4.135.0 より古い。Codespace で <code class="inline">bun add -d wrangler@latest</code> を実行してコミット・push する</td></tr>
+        <tr><td>URL を開くとしばらく待たされる／エラーになる</td><td>コンテナの起動中。初回デプロイ直後は数分かかることがある。数十秒おいて再読み込みする</td></tr>
+        <tr><td>preview の URL が開かない</td><td>手順4 で <strong>Enable Preview Builds</strong> にチェックが入っているか、<code class="inline">preview</code> ブランチのビルドが成功しているかを確認する。Preview のコンテナ対応は部分的とされているため、解消しないときは講師に相談する</td></tr>
+        <tr><td>ログインのコードがメールで届かない</td><td>入力したアドレスが許可したドメインと違う（許可されていないアドレスでも「コードを送信した」と表示される）。迷惑メールフォルダも確認する。コードの有効期限は10分で、再送すると前のコードは使えなくなる</td></tr>
+        <tr><td>Access のログイン画面にメールアドレスの入力欄が無い</td><td>手順3-2 の One-time PIN を追加していない。Zero Trust の <strong>Integrations</strong> → <strong>Identity providers</strong> で追加する</td></tr>
+        <tr><td>Web UI の内容が自動で更新されない</td><td>Worker の Access は WebSocket を通さないため（手順3-4 の注意）。ページを再読み込みする</td></tr>
+        <tr><td>GitHub のリポジトリが一覧に出ない</td><td>GitHub App のインストール時に fork を選んでいない。GitHub の Settings → Applications → <strong>Cloudflare Workers &amp; Pages</strong> の Configure で、<code class="inline">Backlog.md-handson</code> へのアクセスを追加する</td></tr>
+      </table>
+    </section>
+
+    <section id="cleanup">
+      <h2 class="step"><span class="step-num">10</span>後片付け</h2>
+      <ul>
+        <li>preview を消すとき：<code class="inline">preview</code> ブランチを削除しても Preview は残る。Worker の画面の Previews 一覧から削除する</li>
+        <li>Worker を消すとき：<code class="inline">backlog-md</code> の <strong>Settings</strong> の最下部から <strong>Delete</strong> する。コンテナも一緒に消える</li>
+        <li>Access の設定を消すとき：Zero Trust の <strong>Access controls</strong> → <strong>Applications</strong> と <strong>Policies</strong> から、手順3 で作られたものを削除する。Zero Trust の Free プランは無料なので、そのまま残しておいてもよい</li>
+        <li><strong>Workers Paid プランを解約する</strong>：プランは月単位で課金が続く。<strong>Workers &amp; Pages</strong> の <strong>Plans</strong> から Free に戻す</li>
+        <li>GitHub App を外すとき：GitHub の Settings → Applications → <strong>Cloudflare Workers &amp; Pages</strong> から Uninstall する</li>
+      </ul>
+      <div class="callout ok">
+        <strong>✅ ここまでできれば</strong>
+        fork の <code class="inline">main</code> と <code class="inline">preview</code> が、それぞれ自分の workers.dev の URL で、ログインしたチームのメンバーだけに公開されるようになった。Section 3 では、PR ごとに Preview の URL で動作を確かめてからマージする流れを体験する。
+      </div>
+    </section>
+
+    <footer>
+      <p>Claude Code ハンズオン 補足資料 — Backlog.md を Cloudflare Workers で公開する<br>Copyright © AI-Driven Development Study Group</p>
+      <p><a href="index.html">コースポータル</a></p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>
